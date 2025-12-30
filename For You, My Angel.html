@@ -1,0 +1,3113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Garden For You</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      background: #0a0508;
+      color: #c9a0a0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ===== STARFIELD BACKGROUND ===== */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--duration) ease-in-out infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* ===== VIGNETTE OVERLAY ===== */
+    #vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(10, 5, 8, 0.8) 100%);
+      z-index: 1;
+    }
+
+    /* ===== GAME CONTAINER ===== */
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+    }
+
+    #game-canvas {
+      border: 1px solid rgba(139, 90, 100, 0.4);
+      box-shadow: 0 0 40px rgba(139, 90, 100, 0.2), inset 0 0 60px rgba(10, 5, 8, 0.5);
+      background: #0d0810;
+    }
+
+    /* ===== TITLE SCREEN ===== */
+    #title-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #0a0508 0%, #0d0810 50%, #1a0a14 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 1;
+      transition: opacity 1.5s ease;
+    }
+
+    #title-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #title-screen h1 {
+      font-size: 4rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      color: #d4b8be;
+      text-shadow: 0 0 30px rgba(180, 140, 160, 0.5), 0 0 60px rgba(139, 90, 100, 0.3);
+      margin-bottom: 0.5rem;
+      animation: titleGlow 4s ease-in-out infinite;
+    }
+
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: 0 0 30px rgba(180, 140, 160, 0.5), 0 0 60px rgba(139, 90, 100, 0.3); }
+      50% { text-shadow: 0 0 40px rgba(180, 140, 160, 0.7), 0 0 80px rgba(139, 90, 100, 0.5); }
+    }
+
+    #title-screen .subtitle {
+      font-size: 1.2rem;
+      font-style: italic;
+      color: #a08090;
+      letter-spacing: 0.1em;
+      margin-bottom: 3rem;
+    }
+
+    #title-screen .title-flowers {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    #title-screen .title-flowers svg {
+      filter: drop-shadow(0 0 10px rgba(139, 90, 100, 0.4));
+      animation: flowerSway 3s ease-in-out infinite;
+    }
+
+    #title-screen .title-flowers svg:nth-child(2) {
+      animation-delay: -1s;
+    }
+
+    #title-screen .title-flowers svg:nth-child(3) {
+      animation-delay: -2s;
+    }
+
+    @keyframes flowerSway {
+      0%, 100% { transform: rotate(-2deg); }
+      50% { transform: rotate(2deg); }
+    }
+
+    #start-btn {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.2em;
+      padding: 15px 50px;
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.5);
+      color: #c9a0a0;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #start-btn:hover {
+      border-color: rgba(180, 140, 160, 0.9);
+      color: #e8d0d8;
+      box-shadow: 0 0 30px rgba(139, 90, 100, 0.4), inset 0 0 20px rgba(139, 90, 100, 0.1);
+      text-shadow: 0 0 10px rgba(180, 140, 160, 0.5);
+    }
+
+    #start-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(139, 90, 100, 0.1);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    #start-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    /* ===== HUD ===== */
+    #hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    #hud.visible {
+      opacity: 1;
+    }
+
+    #note-counter {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      color: #d4b8be;
+      text-shadow: 0 0 10px rgba(139, 90, 100, 0.5);
+    }
+
+    #area-name {
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      font-size: 1rem;
+      font-style: italic;
+      color: #a08090;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    #area-name.visible {
+      opacity: 1;
+    }
+
+    #controls-hint {
+      position: absolute;
+      bottom: 25px;
+      right: 25px;
+      font-size: 0.85rem;
+      color: #6a5060;
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== AREA TRANSITION ===== */
+    #area-transition {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0a0508;
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s ease;
+    }
+
+    #area-transition.active {
+      opacity: 1;
+    }
+
+    #area-transition .area-title {
+      font-size: 2rem;
+      letter-spacing: 0.15em;
+      color: #d4b8be;
+      text-shadow: 0 0 20px rgba(180, 140, 160, 0.5);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease 0.3s;
+    }
+
+    #area-transition.active .area-title {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== NOTE POPUP ===== */
+    #note-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 5, 8, 0.95);
+      z-index: 90;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    #note-popup.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .note-content {
+      max-width: 500px;
+      padding: 40px 50px;
+      background: linear-gradient(145deg, #0f0812 0%, #1a0a14 100%);
+      border: 1px solid rgba(139, 90, 100, 0.4);
+      box-shadow: 0 0 60px rgba(139, 90, 100, 0.2), inset 0 0 30px rgba(10, 5, 8, 0.5);
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.5s ease;
+    }
+
+    #note-popup.visible .note-content {
+      transform: scale(1);
+    }
+
+    .note-content .note-title {
+      font-size: 1.5rem;
+      letter-spacing: 0.15em;
+      color: #d4b8be;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 15px rgba(180, 140, 160, 0.4);
+    }
+
+    .note-content .note-text {
+      font-size: 1.15rem;
+      line-height: 1.8;
+      color: #c9a0a0;
+      white-space: pre-line;
+      margin-bottom: 2rem;
+    }
+
+    .note-content .note-hint {
+      font-size: 0.85rem;
+      color: #6a5060;
+      font-style: italic;
+    }
+
+    /* ===== MUSIC PLAYER ===== */
+    .music-player {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 8, 18, 0.9);
+      border: 1px solid rgba(139, 90, 100, 0.4);
+      padding: 10px 20px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      z-index: 60;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .music-player.visible {
+      opacity: 1;
+    }
+
+    .music-player .song-title {
+      color: #a08090;
+      font-size: 0.85rem;
+      font-style: italic;
+      letter-spacing: 0.05em;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .music-player button {
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.4);
+      color: #c9a0a0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .music-player button:hover {
+      border-color: rgba(180, 140, 160, 0.8);
+      box-shadow: 0 0 15px rgba(139, 90, 100, 0.3);
+    }
+
+    .volume-slider {
+      -webkit-appearance: none;
+      width: 70px;
+      height: 4px;
+      background: rgba(139, 90, 100, 0.3);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #c9a0a0;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 10px rgba(180, 140, 160, 0.5);
+    }
+
+    /* ===== END SCREEN ===== */
+    #end-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #0a0508 0%, #1a0a14 50%, #0d0810 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s ease;
+    }
+
+    #end-screen.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #end-screen h1 {
+      font-size: 3rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      color: #d4b8be;
+      text-shadow: 0 0 30px rgba(180, 140, 160, 0.6);
+      margin-bottom: 2rem;
+    }
+
+    #end-screen .end-message {
+      font-size: 1.3rem;
+      color: #c9a0a0;
+      text-align: center;
+      max-width: 500px;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    #end-screen .end-flowers {
+      display: flex;
+      gap: 3rem;
+      margin-top: 1rem;
+    }
+
+    #end-screen .end-flowers svg {
+      filter: drop-shadow(0 0 15px rgba(139, 90, 100, 0.5));
+      animation: flowerSway 3s ease-in-out infinite;
+    }
+
+    #replay-btn {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      padding: 12px 35px;
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.4);
+      color: #a08090;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      margin-top: 2rem;
+    }
+
+    #replay-btn:hover {
+      border-color: rgba(180, 140, 160, 0.9);
+      color: #e8d0d8;
+      box-shadow: 0 0 20px rgba(139, 90, 100, 0.3);
+    }
+
+    /* ===== HEARTS PARTICLES ===== */
+    .heart-particle {
+      position: fixed;
+      font-size: 1.5rem;
+      color: #b48c9c;
+      pointer-events: none;
+      animation: floatHeart 4s ease-out forwards;
+      z-index: 95;
+    }
+
+    @keyframes floatHeart {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-200px) scale(0.5); }
+    }
+
+    /* ===== FIREFLIES ===== */
+    .firefly {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #ffffaa;
+      border-radius: 50%;
+      box-shadow: 0 0 10px 3px rgba(255, 255, 150, 0.6);
+      animation: fireflyFloat 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes fireflyFloat {
+      0%, 100% { opacity: 0.3; transform: translate(0, 0); }
+      25% { opacity: 1; transform: translate(20px, -15px); }
+      50% { opacity: 0.5; transform: translate(-10px, -30px); }
+      75% { opacity: 0.8; transform: translate(15px, -20px); }
+    }
+
+    /* ===== OPENING LETTER SCREEN ===== */
+    #opening-letter {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #0a0508 0%, #1a0a14 50%, #0a0508 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 110;
+      opacity: 1;
+      transition: opacity 1.5s ease;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    #opening-letter.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .letter-box {
+      max-width: 550px;
+      padding: 50px;
+      background: linear-gradient(145deg, rgba(15, 8, 18, 0.95) 0%, rgba(26, 10, 20, 0.95) 100%);
+      border: 1px solid rgba(139, 90, 100, 0.4);
+      box-shadow: 0 0 60px rgba(139, 90, 100, 0.2);
+      margin-bottom: 30px;
+    }
+
+    .letter-box p {
+      font-size: 1.2rem;
+      line-height: 2;
+      color: #c9a0a0;
+      margin-bottom: 1.5rem;
+    }
+
+    .letter-box p:first-child {
+      font-style: italic;
+      color: #d4b8be;
+    }
+
+    .letter-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .letter-flowers {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 25px;
+    }
+
+    .letter-flowers svg {
+      filter: drop-shadow(0 0 10px rgba(139, 90, 100, 0.4));
+      animation: flowerSway 3s ease-in-out infinite;
+    }
+
+    .letter-flowers svg:nth-child(2) {
+      animation-delay: -1s;
+    }
+
+    .letter-flowers svg:nth-child(3) {
+      animation-delay: -2s;
+    }
+
+    .anniversary-badge {
+      font-size: 0.95rem;
+      letter-spacing: 0.2em;
+      color: #a08090;
+      padding: 12px 30px;
+      border: 1px solid rgba(139, 90, 100, 0.4);
+      margin-bottom: 30px;
+    }
+
+    #continue-btn {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.15em;
+      padding: 12px 40px;
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.5);
+      color: #c9a0a0;
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    #continue-btn:hover {
+      border-color: rgba(180, 140, 160, 0.9);
+      color: #e8d0d8;
+      box-shadow: 0 0 30px rgba(139, 90, 100, 0.4);
+      text-shadow: 0 0 10px rgba(180, 140, 160, 0.5);
+    }
+
+    /* ===== DREAM INTRO SCREEN ===== */
+    #dream-intro {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 120;
+      opacity: 1;
+      transition: opacity 2s ease;
+    }
+
+    #dream-intro.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dream-text {
+      max-width: 600px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .dream-text p {
+      font-size: 1.3rem;
+      line-height: 2.2;
+      color: #c9a0a0;
+      opacity: 0;
+      transform: translateY(20px);
+      margin-bottom: 1.5rem;
+    }
+
+    .dream-text p.visible {
+      animation: fadeInUp 1.5s ease forwards;
+    }
+
+    .dream-text p.angel-address {
+      font-size: 1.6rem;
+      color: #e8d0d8;
+      font-style: italic;
+      letter-spacing: 0.1em;
+    }
+
+    .dream-text p.dream-poem {
+      font-style: italic;
+      color: #a08090;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #dream-continue-btn {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      padding: 12px 35px;
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.4);
+      color: #a08090;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      opacity: 0;
+      margin-top: 20px;
+    }
+
+    #dream-continue-btn.visible {
+      animation: fadeInUp 1s ease forwards;
+      animation-delay: 0.5s;
+    }
+
+    #dream-continue-btn:hover {
+      border-color: rgba(180, 140, 160, 0.9);
+      color: #e8d0d8;
+      box-shadow: 0 0 20px rgba(139, 90, 100, 0.3);
+    }
+
+    /* ===== SECRET CODE FRAGMENT ===== */
+    .note-fragment {
+      display: inline-block;
+      font-size: 2rem;
+      color: #e8d0d8;
+      text-shadow: 0 0 20px rgba(180, 140, 160, 0.8), 0 0 40px rgba(139, 90, 100, 0.5);
+      margin-top: 1.5rem;
+      letter-spacing: 0.2em;
+      animation: fragmentGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes fragmentGlow {
+      0%, 100% { text-shadow: 0 0 20px rgba(180, 140, 160, 0.8), 0 0 40px rgba(139, 90, 100, 0.5); }
+      50% { text-shadow: 0 0 30px rgba(180, 140, 160, 1), 0 0 60px rgba(139, 90, 100, 0.8); }
+    }
+
+    /* ===== SECRET CODE REVEAL SCREEN ===== */
+    #secret-reveal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #0a0508 0%, #1a0a14 50%, #0a0508 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 95;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s ease;
+    }
+
+    #secret-reveal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .secret-message {
+      font-size: 3.5rem;
+      letter-spacing: 0.3em;
+      color: #e8d0d8;
+      text-shadow: 0 0 30px rgba(180, 140, 160, 0.8), 0 0 60px rgba(139, 90, 100, 0.5);
+      margin-bottom: 2rem;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    #secret-reveal.visible .secret-message {
+      animation: revealMessage 2s ease forwards;
+    }
+
+    @keyframes revealMessage {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .secret-subtitle {
+      font-size: 1.3rem;
+      font-style: italic;
+      color: #a08090;
+      opacity: 0;
+    }
+
+    #secret-reveal.visible .secret-subtitle {
+      animation: fadeInUp 1.5s ease forwards;
+      animation-delay: 1.5s;
+    }
+
+    #continue-to-end-btn {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      padding: 12px 35px;
+      background: transparent;
+      border: 1px solid rgba(180, 140, 160, 0.4);
+      color: #a08090;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      opacity: 0;
+      margin-top: 40px;
+    }
+
+    #secret-reveal.visible #continue-to-end-btn {
+      animation: fadeInUp 1s ease forwards;
+      animation-delay: 2.5s;
+    }
+
+    #continue-to-end-btn:hover {
+      border-color: rgba(180, 140, 160, 0.9);
+      color: #e8d0d8;
+      box-shadow: 0 0 20px rgba(139, 90, 100, 0.3);
+    }
+
+    /* ===== NOTE THEME INDICATORS ===== */
+    .note-theme-badge {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: #6a5060;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <!-- Starfield Background -->
+  <div id="starfield"></div>
+
+  <!-- Vignette Overlay -->
+  <div id="vignette"></div>
+
+  <!-- Dream Intro Screen -->
+  <div id="dream-intro">
+    <div class="dream-text">
+      <p class="angel-address" id="dream-p1">My Angel...</p>
+      <p id="dream-p2">Close your eyes.</p>
+      <p id="dream-p3">In the space between waking and dreaming, I have built you a world—a garden stitched from shadows and starlight, from every whispered "I love you" that lingered in the dark.</p>
+      <p id="dream-p4">Here, you are light itself. A spirit of radiance wandering through the devotion I've cultivated for you. This is why you glow—because in my heart, you illuminate everything.</p>
+      <p class="dream-poem" id="dream-p5">This is not a game.<br>This is a map of my heart.<br>Walk through it. Find the pieces of me<br>I've hidden in every shadow.</p>
+      <p id="dream-p6">And when you've gathered them all... you'll see what I've been trying to say all along.</p>
+    </div>
+    <button id="dream-continue-btn">Enter My Dream</button>
+  </div>
+
+  <!-- Opening Letter Screen -->
+  <div id="opening-letter">
+    <div class="letter-box">
+      <p>My Angel,</p>
+      <p>Three and a half years of loving you, and every moment feels like starlight—fleeting yet infinite, soft yet burning.</p>
+      <p>You are the dark bloom in my garden of ordinary days. The constellation I trace when the world goes quiet. The beautiful shadow that makes the light worth finding.</p>
+      <p>Before you, I did not know that love could feel like this—like velvet and thorns, like moonlight on gravestones, like coming home to a place I never knew existed.</p>
+      <p>You are my evermore.</p>
+      <p>Happy 3.5 years, my love.</p>
+      <p>Forever yours ♡</p>
+    </div>
+    <div class="letter-flowers">
+      <!-- Blood Flower -->
+      <svg width="70" height="100" viewBox="0 0 140 200">
+        <path d="M70 200 Q68 150 70 100" stroke="#2d4a2d" stroke-width="3" fill="none"/>
+        <path d="M70 85 Q67.5 80 15 85" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <path d="M70 85 Q72.5 57.5 57.35 37.06" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <path d="M70 85 Q92.5 65 107.65 37.06" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <path d="M70 85 Q95 85 125 85" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <path d="M70 85 Q92.5 105 107.65 132.94" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <path d="M70 85 Q72.5 112.5 57.35 132.94" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <circle cx="107" cy="85" r="2" fill="#4a0000"/>
+        <circle cx="89" cy="52" r="2" fill="#4a0000"/>
+        <circle cx="51" cy="52" r="2" fill="#4a0000"/>
+        <circle cx="33" cy="85" r="2" fill="#4a0000"/>
+        <circle cx="51" cy="118" r="2" fill="#4a0000"/>
+        <circle cx="89" cy="118" r="2" fill="#4a0000"/>
+      </svg>
+      <!-- Black Rose -->
+      <svg width="60" height="110" viewBox="0 0 120 220">
+        <path d="M60 220 Q55 180 60 140 Q62 120 60 95" stroke="#1a3a1a" stroke-width="4" fill="none"/>
+        <ellipse cx="45" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(-30 45 75)"/>
+        <ellipse cx="75" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(30 75 75)"/>
+        <ellipse cx="50" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(-50 50 85)"/>
+        <ellipse cx="70" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(50 70 85)"/>
+        <ellipse cx="60" cy="55" rx="15" ry="20" fill="#1a0a10"/>
+        <ellipse cx="52" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(-20 52 68)"/>
+        <ellipse cx="68" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(20 68 68)"/>
+        <ellipse cx="60" cy="62" rx="10" ry="15" fill="#2a1520"/>
+        <ellipse cx="55" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(-10 55 65)"/>
+        <ellipse cx="65" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(10 65 65)"/>
+        <ellipse cx="60" cy="62" rx="6" ry="8" fill="#4a2a40"/>
+        <ellipse cx="60" cy="60" rx="4" ry="5" fill="#5a3a50"/>
+      </svg>
+      <!-- Lily of the Valley -->
+      <svg width="50" height="100" viewBox="0 0 100 200">
+        <path d="M50 200 Q48 150 50 100 Q52 70 55 40" stroke="#3a5a3a" stroke-width="2.5" fill="none"/>
+        <path d="M50 180 Q20 150 15 100 Q18 90 25 85 Q35 120 50 175" fill="#2a4a2a"/>
+        <path d="M50 180 Q80 150 85 100 Q82 90 75 85 Q65 120 50 175" fill="#2a4a2a"/>
+        <g transform="translate(55, 45) scale(0.9)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(58, 55) scale(1)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(56, 67) scale(1)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(60, 78) scale(0.95)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(57, 90) scale(0.9)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(61, 100) scale(0.85)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+      </svg>
+    </div>
+    <div class="anniversary-badge">3.5 Years ✦ Together</div>
+    <button id="continue-btn">Enter the Garden</button>
+  </div>
+
+  <!-- Title Screen -->
+  <div id="title-screen">
+    <h1>A Garden For You</h1>
+    <p class="subtitle">— a journey through shadows and devotion —</p>
+    <div class="title-flowers">
+      <!-- Blood Flower -->
+      <svg width="70" height="90" viewBox="0 0 140 180">
+        <path d="M70 180 Q68 140 70 100 Q72 80 70 85" stroke="#2d5a2d" stroke-width="4" fill="none"/>
+        <path d="M70 85 Q72.5 112.5 57.35 132.94" stroke="#8b0000" stroke-width="3" fill="none" style="filter: drop-shadow(0 0 3px rgba(139,0,0,0.5));"/>
+        <line x1="70" y1="85" x2="105" y2="85" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="107" cy="85" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="87.5" y2="54.69" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="89" cy="52" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="52.5" y2="54.69" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="51" cy="52" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="35" y2="85" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="33" cy="85" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="52.5" y2="115.31" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="51" cy="118" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="87.5" y2="115.31" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="89" cy="118" r="2" fill="#4a0000"/>
+      </svg>
+      <!-- Black Rose -->
+      <svg width="60" height="110" viewBox="0 0 120 220">
+        <path d="M60 220 Q55 180 60 140 Q62 120 60 95" stroke="#1a3a1a" stroke-width="4" fill="none"/>
+        <path d="M58 160 L50 155 L56 158" fill="#1a3a1a"/>
+        <path d="M62 140 L70 135 L64 138" fill="#1a3a1a"/>
+        <path d="M58 170 Q40 160 35 145 Q45 150 58 165" fill="#1a3a1a"/>
+        <path d="M62 150 Q80 140 85 125 Q75 130 62 145" fill="#1a3a1a"/>
+        <ellipse cx="45" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(-30 45 75)"/>
+        <ellipse cx="75" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(30 75 75)"/>
+        <ellipse cx="50" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(-50 50 85)"/>
+        <ellipse cx="70" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(50 70 85)"/>
+        <ellipse cx="60" cy="55" rx="15" ry="20" fill="#1a0a10"/>
+        <ellipse cx="52" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(-20 52 68)"/>
+        <ellipse cx="68" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(20 68 68)"/>
+        <ellipse cx="60" cy="62" rx="10" ry="15" fill="#2a1520"/>
+        <ellipse cx="55" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(-10 55 65)"/>
+        <ellipse cx="65" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(10 65 65)"/>
+        <ellipse cx="60" cy="62" rx="6" ry="8" fill="#4a2a40"/>
+        <ellipse cx="60" cy="60" rx="4" ry="5" fill="#5a3a50"/>
+      </svg>
+      <!-- Lily of the Valley -->
+      <svg width="50" height="100" viewBox="0 0 100 200">
+        <path d="M50 200 Q48 150 50 100 Q52 70 55 40" stroke="#3a5a3a" stroke-width="2.5" fill="none"/>
+        <path d="M50 180 Q20 150 15 100 Q18 90 25 85 Q35 120 50 175" fill="#2a4a2a"/>
+        <path d="M50 180 Q80 150 85 100 Q82 90 75 85 Q65 120 50 175" fill="#2a4a2a"/>
+        <g transform="translate(55, 45) scale(0.9)">
+          <path d="M0 -5 Q5 -3 8 2" stroke="#3a5a3a" stroke-width="1" fill="none"/>
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+          <ellipse cx="12" cy="3" rx="4" ry="3" fill="#e8e0e0"/>
+        </g>
+        <g transform="translate(58, 55) scale(0.8)">
+          <path d="M0 -5 Q5 -3 8 2" stroke="#3a5a3a" stroke-width="1" fill="none"/>
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+          <ellipse cx="12" cy="3" rx="4" ry="3" fill="#e8e0e0"/>
+        </g>
+        <g transform="translate(56, 67) scale(0.7)">
+          <path d="M0 -5 Q5 -3 8 2" stroke="#3a5a3a" stroke-width="1" fill="none"/>
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+          <ellipse cx="12" cy="3" rx="4" ry="3" fill="#e8e0e0"/>
+        </g>
+      </svg>
+    </div>
+    <button id="start-btn">Begin</button>
+  </div>
+
+  <!-- Game Container -->
+  <div id="game-container">
+    <canvas id="game-canvas" width="900" height="600"></canvas>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="note-counter">Notes: 0 / 12</div>
+    <div id="area-name"></div>
+    <div id="controls-hint">WASD or Arrow Keys to move</div>
+  </div>
+
+  <!-- Area Transition -->
+  <div id="area-transition">
+    <div class="area-title"></div>
+  </div>
+
+  <!-- Note Popup -->
+  <div id="note-popup">
+    <div class="note-content">
+      <div class="note-theme-badge" id="note-theme"></div>
+      <div class="note-title"></div>
+      <div class="note-text"></div>
+      <div class="note-fragment" id="note-fragment"></div>
+      <div class="note-hint">Click anywhere or press Enter to close</div>
+    </div>
+  </div>
+
+  <!-- Music Player -->
+  <div class="music-player" id="music-player">
+    <button id="play-pause-btn">&#9654;</button>
+    <span class="song-title" id="song-title">No music loaded</span>
+    <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="70">
+    <button id="next-btn">&#9658;&#9658;</button>
+  </div>
+
+  <!-- Secret Code Reveal Screen -->
+  <div id="secret-reveal">
+    <div class="secret-message" id="secret-message">FOREVER YOURS</div>
+    <p class="secret-subtitle">The message hidden in every note, spelled out for you, my angel</p>
+    <button id="continue-to-end-btn">Continue</button>
+  </div>
+
+  <!-- End Screen -->
+  <div id="end-screen">
+    <h1>Every Rose Found ♡</h1>
+    <p class="end-message">
+      You gathered every shadow,<br>
+      every whispered confession,<br>
+      every thorn I've ever hidden.<br><br>
+      And still, you stayed.<br><br>
+      In this garden of darkness and devotion,<br>
+      you are the only light I need.<br><br>
+      <em>— Forever yours, my angel, in death and beyond —</em>
+    </p>
+    <div class="end-flowers">
+      <!-- Same flowers as title -->
+      <svg width="70" height="90" viewBox="0 0 140 180">
+        <path d="M70 180 Q68 140 70 100 Q72 80 70 85" stroke="#2d5a2d" stroke-width="4" fill="none"/>
+        <path d="M70 85 Q72.5 112.5 57.35 132.94" stroke="#8b0000" stroke-width="3" fill="none"/>
+        <line x1="70" y1="85" x2="105" y2="85" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="107" cy="85" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="87.5" y2="54.69" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="89" cy="52" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="52.5" y2="54.69" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="51" cy="52" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="35" y2="85" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="33" cy="85" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="52.5" y2="115.31" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="51" cy="118" r="2" fill="#4a0000"/>
+        <line x1="70" y1="85" x2="87.5" y2="115.31" stroke="#660000" stroke-width="1.5"/>
+        <circle cx="89" cy="118" r="2" fill="#4a0000"/>
+      </svg>
+      <svg width="60" height="110" viewBox="0 0 120 220">
+        <path d="M60 220 Q55 180 60 140 Q62 120 60 95" stroke="#1a3a1a" stroke-width="4" fill="none"/>
+        <ellipse cx="45" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(-30 45 75)"/>
+        <ellipse cx="75" cy="75" rx="18" ry="25" fill="#1a0a10" transform="rotate(30 75 75)"/>
+        <ellipse cx="50" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(-50 50 85)"/>
+        <ellipse cx="70" cy="85" rx="16" ry="22" fill="#1a0a10" transform="rotate(50 70 85)"/>
+        <ellipse cx="60" cy="55" rx="15" ry="20" fill="#1a0a10"/>
+        <ellipse cx="52" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(-20 52 68)"/>
+        <ellipse cx="68" cy="68" rx="12" ry="18" fill="#2a1520" transform="rotate(20 68 68)"/>
+        <ellipse cx="60" cy="62" rx="10" ry="15" fill="#2a1520"/>
+        <ellipse cx="55" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(-10 55 65)"/>
+        <ellipse cx="65" cy="65" rx="8" ry="12" fill="#3a2030" transform="rotate(10 65 65)"/>
+        <ellipse cx="60" cy="62" rx="6" ry="8" fill="#4a2a40"/>
+        <ellipse cx="60" cy="60" rx="4" ry="5" fill="#5a3a50"/>
+      </svg>
+      <svg width="50" height="100" viewBox="0 0 100 200">
+        <path d="M50 200 Q48 150 50 100 Q52 70 55 40" stroke="#3a5a3a" stroke-width="2.5" fill="none"/>
+        <path d="M50 180 Q20 150 15 100 Q18 90 25 85 Q35 120 50 175" fill="#2a4a2a"/>
+        <path d="M50 180 Q80 150 85 100 Q82 90 75 85 Q65 120 50 175" fill="#2a4a2a"/>
+        <g transform="translate(55, 45) scale(0.9)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(58, 55) scale(0.8)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+        <g transform="translate(56, 67) scale(0.7)">
+          <ellipse cx="12" cy="5" rx="6" ry="8" fill="#f5f0f0"/>
+        </g>
+      </svg>
+    </div>
+    <button id="replay-btn">Walk Through My Heart Again</button>
+  </div>
+
+  <script>
+    // ===== GAME CONFIGURATION =====
+    const CONFIG = {
+      canvasWidth: 900,
+      canvasHeight: 600,
+      playerSize: 24,
+      playerSpeed: 3.5,
+      noteCollectRadius: 35,
+      totalNotes: 12,
+      secretMessage: 'FOREVERYOURS'
+    };
+
+    // ===== NOTES DATA =====
+    // Gothic romantic notes - each contains a fragment that spells "FOREVER YOURS"
+    // Themes: Garden=wax seal, Clearing=starlight, Greenhouse=pressed petals, Cemetery=carved stone, Sanctuary=pure light
+    const NOTES = [
+      {
+        id: 1,
+        area: 'garden',
+        x: 250, y: 220,
+        title: '✦ Black Rose I ✦',
+        theme: 'Sealed with rose wax',
+        fragment: 'F',
+        text: `Before you, I wandered through
+endless nights without a name—
+a silhouette against the moon,
+searching for something I couldn't find.
+
+Then you emerged from the shadows,
+and suddenly the darkness
+had a heart that beat for me.
+
+You were the midnight I'd been waiting for.`
+      },
+      {
+        id: 2,
+        area: 'garden',
+        x: 600, y: 380,
+        title: '✦ Black Rose II ✦',
+        theme: 'Sealed with rose wax',
+        fragment: 'O',
+        text: `They say love is a grave we dig ourselves.
+But darling, what a beautiful tomb
+we have built together—
+decorated with velvet nights
+and the thorns of every rose
+you've ever pressed against my lips.
+
+I would die a thousand deaths
+to live one life with you.`
+      },
+      {
+        id: 3,
+        area: 'garden',
+        x: 300, y: 520,
+        title: '✦ Black Rose III ✦',
+        theme: 'Sealed with rose wax',
+        fragment: 'R',
+        text: `If I could distill moonlight into words,
+I would write your name across the sky.
+If I could capture the silence between heartbeats,
+I would fill it with everything I cannot say—
+
+How your laughter makes the darkness tremble.
+How your touch turns my veins to poetry.
+How every moment without you
+feels like a winter that will never end.
+
+You are my spring. My only spring.`
+      },
+      {
+        id: 4,
+        area: 'clearing',
+        x: 450, y: 200,
+        title: '✦ Black Rose IV ✦',
+        theme: 'Written on starlight',
+        fragment: 'E',
+        text: `In the cathedral of your arms,
+I have found my sanctuary.
+Your heartbeat is the hymn
+I never knew I needed—
+a requiem reversed,
+bringing me back to life
+with every sacred pulse.
+
+You are my resurrection.`
+      },
+      {
+        id: 5,
+        area: 'clearing',
+        x: 150, y: 450,
+        title: '✦ Black Rose V ✦',
+        theme: 'Written on starlight',
+        fragment: 'V',
+        text: `When the world turns grey
+and the cold seeps into my bones,
+I think of your warmth—
+how you wrap around me
+like mourning clothes in reverse,
+pulling me from sorrow
+into something soft and eternal.
+
+In your eyes I found
+the only heaven I'll ever need.`
+      },
+      {
+        id: 6,
+        area: 'clearing',
+        x: 780, y: 250,
+        title: '✦ Black Rose VI ✦',
+        theme: 'Written on starlight',
+        fragment: 'E',
+        text: `Some nights I dream of us
+in another life—
+two shadows dancing
+in an ancient ballroom,
+where the only light comes
+from the fire in our veins.
+
+Even there, even then,
+I would find you.
+Across every lifetime,
+through every veil of death,
+my soul would recognize yours
+and whisper: "There you are.
+I've been waiting for you."`
+      },
+      {
+        id: 7,
+        area: 'greenhouse',
+        x: 350, y: 180,
+        title: '✦ Black Rose VII ✦',
+        theme: 'Pressed between petals',
+        fragment: 'R',
+        text: `I have carved your name
+into the chambers of my heart
+with a blade made of devotion.
+Each scar a testament,
+each wound a promise:
+
+That I am yours
+in this life and whatever
+shadows await beyond it.
+
+Blood and bone, I am yours.`
+      },
+      {
+        id: 8,
+        area: 'greenhouse',
+        x: 550, y: 400,
+        title: '✦ Black Rose VIII ✦',
+        theme: 'Pressed between petals',
+        fragment: 'Y',
+        text: `Some build monuments of stone.
+I built you this garden of code—
+every pixel a petal,
+every function a whispered vow.
+
+It is imperfect, like me.
+But it breathes with the same devotion
+that fills my lungs
+when I speak your name.
+
+This is my love, made visible.`
+      },
+      {
+        id: 9,
+        area: 'greenhouse',
+        x: 780, y: 280,
+        title: '✦ Black Rose IX ✦',
+        theme: 'Pressed between petals',
+        fragment: 'O',
+        text: `Three and a half years—
+1,277 days of waking up
+knowing you exist in this world.
+1,277 sunsets made bearable
+because you watched them with me.
+
+If I had to live every moment again,
+every laugh, every tear, every silence—
+I would choose you.
+Again. Always. Forever.
+
+You are not just my love.
+You are my timeline.
+The before and after of everything I am.`
+      },
+      {
+        id: 10,
+        area: 'cemetery',
+        x: 300, y: 250,
+        title: '✦ Black Rose X ✦',
+        theme: 'Carved in eternal stone',
+        fragment: 'U',
+        text: `Here among the stones
+where love outlives the flesh,
+I've written vows that death cannot erase.
+
+Every name here once meant everything
+to someone, somewhere.
+And yours, my angel,
+is etched deeper than any epitaph—
+not in marble, but in the marrow of my soul.
+
+When my bones are dust,
+your name will still echo
+in whatever remains of me.`
+      },
+      {
+        id: 11,
+        area: 'cemetery',
+        x: 600, y: 450,
+        title: '✦ Black Rose XI ✦',
+        theme: 'Carved in eternal stone',
+        fragment: 'R',
+        text: `They fear graveyards,
+but I find peace here—
+where love stories end
+only on paper.
+
+The truth the tombstones keep:
+Love doesn't die when we do.
+It haunts. It lingers. It waits.
+
+And I will wait for you
+beyond every ending,
+in whatever garden
+grows on the other side.`
+      },
+      {
+        id: 12,
+        area: 'sanctuary',
+        x: 450, y: 480,
+        title: '✦ The Final Rose ✦',
+        theme: 'Pure radiant light',
+        fragment: 'S',
+        text: `My beloved Mehak, my angel,
+
+You have walked through my darkness
+and found every hidden piece of me.
+You have seen the thorns I hide
+and loved me anyway.
+
+In a world that often feels like
+an endless winter,
+you are the hearth I return to—
+the flame that never falters,
+the warmth that keeps the wolves at bay.
+
+I will love you until the stars burn black.
+I will love you until the last rose withers.
+I will love you to death—
+and far, far beyond.
+
+Forever yours, my angel,
+in shadows and in light ♡
+
+Happy 3.5 years, my everything.`
+      }
+    ];
+
+    // ===== AREA DEFINITIONS =====
+    const AREAS = {
+      garden: {
+        name: 'The Moonlit Garden',
+        background: '#0d0810',
+        exits: [
+          { x: 870, y: 250, width: 30, height: 100, to: 'clearing', spawnX: 50, spawnY: 300 },
+          { x: 400, y: 0, width: 100, height: 30, to: 'greenhouse', spawnX: 450, spawnY: 550 }
+        ],
+        obstacles: [
+          // Fountain in center
+          { x: 400, y: 280, width: 100, height: 100, type: 'fountain' },
+          // Flower beds
+          { x: 80, y: 100, width: 120, height: 80, type: 'flowerbed' },
+          { x: 700, y: 100, width: 120, height: 80, type: 'flowerbed' },
+          { x: 80, y: 420, width: 120, height: 80, type: 'flowerbed' },
+          { x: 700, y: 420, width: 120, height: 80, type: 'flowerbed' },
+          // Trees
+          { x: 50, y: 250, width: 50, height: 50, type: 'tree' },
+          { x: 800, y: 500, width: 50, height: 50, type: 'tree' },
+          // Additional benches
+          { x: 280, y: 350, width: 60, height: 25, type: 'bench' },
+          { x: 560, y: 200, width: 60, height: 25, type: 'bench' }
+        ],
+        decorations: [
+          { type: 'bloodflower', x: 100, y: 130, scale: 0.5 },
+          { type: 'blackrose', x: 150, y: 120, scale: 0.5 },
+          { type: 'lily', x: 720, y: 130, scale: 0.5 },
+          { type: 'blackrose', x: 770, y: 120, scale: 0.5 },
+          { type: 'bloodflower', x: 100, y: 450, scale: 0.5 },
+          { type: 'lily', x: 160, y: 460, scale: 0.5 },
+          { type: 'blackrose', x: 720, y: 450, scale: 0.5 },
+          { type: 'bloodflower', x: 770, y: 460, scale: 0.5 },
+          { type: 'path', x: 450, y: 450, width: 80, height: 150 },
+          { type: 'path', x: 450, y: 150, width: 80, height: 100 },
+          // Additional flowers scattered around
+          { type: 'bloodflower', x: 250, y: 100, scale: 0.4 },
+          { type: 'lily', x: 650, y: 100, scale: 0.4 },
+          { type: 'blackrose', x: 350, y: 550, scale: 0.45 },
+          { type: 'bloodflower', x: 550, y: 550, scale: 0.45 },
+          { type: 'lily', x: 180, y: 300, scale: 0.4 },
+          { type: 'blackrose', x: 720, y: 300, scale: 0.4 },
+          // Lanterns
+          { type: 'lantern', x: 350, y: 280 },
+          { type: 'lantern', x: 550, y: 280 },
+          { type: 'lantern', x: 350, y: 380 },
+          { type: 'lantern', x: 550, y: 380 },
+          // Stepping stones on paths
+          { type: 'stones', x: 450, y: 420 },
+          { type: 'stones', x: 450, y: 480 },
+          { type: 'stones', x: 450, y: 120 }
+        ],
+        hasGardenParticles: true
+      },
+      clearing: {
+        name: 'The Starlit Clearing',
+        background: '#0a0810',
+        exits: [
+          { x: 0, y: 250, width: 30, height: 100, to: 'garden', spawnX: 820, spawnY: 300 },
+          { x: 870, y: 250, width: 30, height: 100, to: 'cemetery', spawnX: 50, spawnY: 300 }
+        ],
+        obstacles: [
+          // Pond
+          { x: 550, y: 300, width: 180, height: 120, type: 'pond' },
+          // Fallen logs
+          { x: 150, y: 200, width: 100, height: 30, type: 'log' },
+          { x: 700, y: 150, width: 80, height: 25, type: 'log' },
+          // Trees
+          { x: 80, y: 80, width: 60, height: 60, type: 'tree' },
+          { x: 780, y: 450, width: 60, height: 60, type: 'tree' },
+          { x: 300, y: 50, width: 50, height: 50, type: 'tree' },
+          // Mossy rocks
+          { x: 400, y: 400, width: 50, height: 40, type: 'rock' },
+          { x: 250, y: 500, width: 45, height: 35, type: 'rock' }
+        ],
+        decorations: [
+          { type: 'lily', x: 200, y: 350, scale: 0.6 },
+          { type: 'bloodflower', x: 100, y: 500, scale: 0.5 },
+          { type: 'blackrose', x: 750, y: 250, scale: 0.5 },
+          // More flowers around the clearing
+          { type: 'blackrose', x: 350, y: 100, scale: 0.45 },
+          { type: 'lily', x: 500, y: 100, scale: 0.45 },
+          { type: 'bloodflower', x: 600, y: 500, scale: 0.5 },
+          { type: 'blackrose', x: 50, y: 350, scale: 0.4 },
+          { type: 'lily', x: 850, y: 300, scale: 0.4 },
+          // Mushrooms around
+          { type: 'mushroom', x: 180, y: 250 },
+          { type: 'mushroom', x: 350, y: 450 },
+          { type: 'mushroom', x: 500, y: 200 },
+          { type: 'mushroom', x: 650, y: 480 },
+          // Tall grass patches
+          { type: 'grass', x: 100, y: 380 },
+          { type: 'grass', x: 300, y: 300 },
+          { type: 'grass', x: 800, y: 200 },
+          { type: 'grass', x: 450, y: 520 }
+        ],
+        hasFireflies: true,
+        fireflyCount: 15
+      },
+      cemetery: {
+        name: 'The Garden of Eternal Vows',
+        background: '#0a0608',
+        exits: [
+          { x: 0, y: 250, width: 30, height: 100, to: 'clearing', spawnX: 820, spawnY: 300 },
+          { x: 400, y: 570, width: 100, height: 30, to: 'sanctuary', spawnX: 450, spawnY: 80, requiresNotes: 10 }
+        ],
+        obstacles: [
+          // Gravestones
+          { x: 150, y: 150, width: 50, height: 70, type: 'gravestone' },
+          { x: 700, y: 150, width: 50, height: 70, type: 'gravestone' },
+          { x: 200, y: 350, width: 50, height: 70, type: 'gravestone' },
+          { x: 650, y: 350, width: 50, height: 70, type: 'gravestone' },
+          { x: 100, y: 500, width: 50, height: 70, type: 'gravestone' },
+          { x: 750, y: 500, width: 50, height: 70, type: 'gravestone' },
+          // Central mausoleum
+          { x: 380, y: 200, width: 140, height: 120, type: 'mausoleum' },
+          // Willow trees
+          { x: 50, y: 80, width: 70, height: 70, type: 'willow' },
+          { x: 780, y: 80, width: 70, height: 70, type: 'willow' },
+          // Iron fence sections
+          { x: 300, y: 50, width: 80, height: 20, type: 'fence' },
+          { x: 520, y: 50, width: 80, height: 20, type: 'fence' }
+        ],
+        decorations: [
+          // Roses growing over graves
+          { type: 'blackrose', x: 170, y: 130, scale: 0.5 },
+          { type: 'bloodflower', x: 720, y: 130, scale: 0.5 },
+          { type: 'lily', x: 220, y: 330, scale: 0.5 },
+          { type: 'blackrose', x: 670, y: 330, scale: 0.5 },
+          { type: 'bloodflower', x: 120, y: 480, scale: 0.5 },
+          { type: 'lily', x: 770, y: 480, scale: 0.5 },
+          // More scattered flowers
+          { type: 'blackrose', x: 350, y: 400, scale: 0.45 },
+          { type: 'bloodflower', x: 550, y: 400, scale: 0.45 },
+          { type: 'lily', x: 450, y: 500, scale: 0.5 },
+          // Candles on graves
+          { type: 'candle', x: 165, y: 200 },
+          { type: 'candle', x: 715, y: 200 },
+          { type: 'candle', x: 215, y: 400 },
+          { type: 'candle', x: 665, y: 400 },
+          // Ghostly wisps
+          { type: 'wisp', x: 250, y: 200 },
+          { type: 'wisp', x: 650, y: 250 },
+          { type: 'wisp', x: 450, y: 450 }
+        ],
+        hasGhostlyMist: true,
+        hasWisps: true
+      },
+      greenhouse: {
+        name: 'The Glass Greenhouse',
+        background: '#120810',
+        exits: [
+          { x: 400, y: 570, width: 100, height: 30, to: 'garden', spawnX: 450, spawnY: 80 }
+        ],
+        obstacles: [
+          // Plant tables
+          { x: 100, y: 100, width: 150, height: 60, type: 'table' },
+          { x: 650, y: 100, width: 150, height: 60, type: 'table' },
+          { x: 100, y: 350, width: 150, height: 60, type: 'table' },
+          { x: 650, y: 350, width: 150, height: 60, type: 'table' },
+          // Center display
+          { x: 380, y: 250, width: 140, height: 100, type: 'display' },
+          // Potted plants
+          { x: 300, y: 480, width: 40, height: 40, type: 'pot' },
+          { x: 560, y: 480, width: 40, height: 40, type: 'pot' }
+        ],
+        decorations: [
+          { type: 'blackrose', x: 130, y: 80, scale: 0.6 },
+          { type: 'lily', x: 180, y: 85, scale: 0.6 },
+          { type: 'bloodflower', x: 680, y: 80, scale: 0.6 },
+          { type: 'blackrose', x: 750, y: 85, scale: 0.6 },
+          { type: 'lily', x: 130, y: 330, scale: 0.6 },
+          { type: 'bloodflower', x: 200, y: 335, scale: 0.6 },
+          { type: 'blackrose', x: 680, y: 330, scale: 0.6 },
+          { type: 'lily', x: 750, y: 335, scale: 0.6 },
+          { type: 'vine', x: 0, y: 0 },
+          { type: 'vine', x: 850, y: 0 },
+          // Additional vines on sides
+          { type: 'vine', x: 50, y: 200 },
+          { type: 'vine', x: 800, y: 200 },
+          // Hanging plants
+          { type: 'hanging', x: 200, y: 20 },
+          { type: 'hanging', x: 450, y: 30 },
+          { type: 'hanging', x: 700, y: 20 },
+          // More flowers on display
+          { type: 'bloodflower', x: 420, y: 230, scale: 0.65 },
+          { type: 'blackrose', x: 470, y: 235, scale: 0.65 },
+          { type: 'lily', x: 440, y: 320, scale: 0.6 },
+          // Scattered petals
+          { type: 'petals', x: 300, y: 200 },
+          { type: 'petals', x: 600, y: 450 },
+          { type: 'petals', x: 150, y: 500 },
+          // Glass panels effect
+          { type: 'glasspanel', x: 0, y: 0 },
+          { type: 'glasspanel', x: 850, y: 0 }
+        ],
+        hasMist: true,
+        hasCondensation: true
+      },
+      sanctuary: {
+        name: 'The Secret Sanctuary',
+        background: '#0f0812',
+        exits: [
+          { x: 400, y: 0, width: 100, height: 30, to: 'cemetery', spawnX: 450, spawnY: 520 }
+        ],
+        obstacles: [
+          // Central sacred tree
+          { x: 380, y: 280, width: 140, height: 140, type: 'sacred_tree' }
+        ],
+        decorations: [
+          // Ring of flowers around the sacred tree
+          { type: 'bloodflower', x: 320, y: 260, scale: 0.6 },
+          { type: 'blackrose', x: 350, y: 420, scale: 0.6 },
+          { type: 'lily', x: 550, y: 420, scale: 0.6 },
+          { type: 'bloodflower', x: 580, y: 260, scale: 0.6 },
+          // Scattered around the edges
+          { type: 'bloodflower', x: 150, y: 200, scale: 0.7 },
+          { type: 'blackrose', x: 200, y: 350, scale: 0.7 },
+          { type: 'lily', x: 130, y: 450, scale: 0.7 },
+          { type: 'bloodflower', x: 700, y: 200, scale: 0.7 },
+          { type: 'blackrose', x: 750, y: 350, scale: 0.7 },
+          { type: 'lily', x: 720, y: 450, scale: 0.7 },
+          { type: 'blackrose', x: 300, y: 150, scale: 0.6 },
+          { type: 'blackrose', x: 600, y: 150, scale: 0.6 },
+          { type: 'lily', x: 350, y: 550, scale: 0.6 },
+          { type: 'lily', x: 550, y: 550, scale: 0.6 },
+          // Extra flowers for lushness
+          { type: 'bloodflower', x: 80, y: 300, scale: 0.55 },
+          { type: 'lily', x: 820, y: 300, scale: 0.55 },
+          { type: 'blackrose', x: 100, y: 550, scale: 0.5 },
+          { type: 'bloodflower', x: 800, y: 550, scale: 0.5 },
+          // Candles around the sanctuary
+          { type: 'candle', x: 250, y: 250 },
+          { type: 'candle', x: 650, y: 250 },
+          { type: 'candle', x: 250, y: 450 },
+          { type: 'candle', x: 650, y: 450 },
+          { type: 'candle', x: 450, y: 150 },
+          // Floating petals
+          { type: 'floatingpetals', x: 450, y: 300 },
+          // Glowing orbs
+          { type: 'orb', x: 200, y: 150 },
+          { type: 'orb', x: 700, y: 150 },
+          { type: 'orb', x: 150, y: 500 },
+          { type: 'orb', x: 750, y: 500 }
+        ],
+        hasHeartConstellation: true,
+        hasSanctuaryGlow: true,
+        hasFloatingPetals: true
+      }
+    };
+
+    // ===== MUSIC PLAYLIST =====
+    // Curated gothic romance soundtrack
+    const PLAYLIST = [
+      { file: 'music/love-you-to-death.mp3', title: 'Love You to Death - Type O Negative', area: 'garden' },
+      { file: 'music/black-no-1.mp3', title: 'Black No. 1 - Type O Negative', area: 'clearing' },
+      { file: 'music/dead-leaves.mp3', title: 'Dead Leaves - Sentenced', area: 'cemetery' },
+      { file: 'music/as-we-die.mp3', title: 'As We Die - Charon', area: 'greenhouse' },
+      { file: 'music/once-more-to-see-you.mp3', title: 'Once More to See You - Mitski', area: 'sanctuary' },
+      { file: 'music/join-me-in-death.mp3', title: 'Join Me In Death - HIM', area: 'finale' }
+    ];
+
+    // ===== GAME STATE =====
+    const gameState = {
+      currentArea: 'garden',
+      player: { x: 450, y: 500 },
+      collectedNotes: new Set(),
+      showingNote: false,
+      currentNote: null,
+      gameStarted: false,
+      gameComplete: false,
+      keys: {},
+      transitioning: false,
+      time: 0
+    };
+
+    // ===== MUSIC PLAYER STATE =====
+    const musicPlayer = {
+      audio: new Audio(),
+      currentTrack: 0,
+      isPlaying: false,
+      volume: 0.7
+    };
+
+    // ===== DOM ELEMENTS =====
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const openingLetter = document.getElementById('opening-letter');
+    const continueBtn = document.getElementById('continue-btn');
+    const titleScreen = document.getElementById('title-screen');
+    const startBtn = document.getElementById('start-btn');
+    const hud = document.getElementById('hud');
+    const noteCounter = document.getElementById('note-counter');
+    const areaName = document.getElementById('area-name');
+    const areaTransition = document.getElementById('area-transition');
+    const areaTitle = areaTransition.querySelector('.area-title');
+    const notePopup = document.getElementById('note-popup');
+    const notePopupTitle = notePopup.querySelector('.note-title');
+    const notePopupText = notePopup.querySelector('.note-text');
+    const endScreen = document.getElementById('end-screen');
+    const replayBtn = document.getElementById('replay-btn');
+    const dreamIntro = document.getElementById('dream-intro');
+    const dreamContinueBtn = document.getElementById('dream-continue-btn');
+    const secretReveal = document.getElementById('secret-reveal');
+    const continueToEndBtn = document.getElementById('continue-to-end-btn');
+    const noteThemeBadge = document.getElementById('note-theme');
+    const noteFragmentEl = document.getElementById('note-fragment');
+    const musicPlayerEl = document.getElementById('music-player');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const songTitleEl = document.getElementById('song-title');
+    const volumeSlider = document.getElementById('volume-slider');
+    const nextBtn = document.getElementById('next-btn');
+
+    // ===== INITIALIZATION =====
+    function init() {
+      createStarfield();
+      loadProgress();
+      setupEventListeners();
+      updateNoteCounter();
+    }
+
+    function createStarfield() {
+      const starfield = document.getElementById('starfield');
+      for (let i = 0; i < 100; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = (Math.random() * 2 + 1) + 'px';
+        star.style.height = star.style.width;
+        star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+        star.style.animationDelay = Math.random() * 5 + 's';
+        starfield.appendChild(star);
+      }
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem('gardenNotes');
+      if (saved) {
+        const noteIds = JSON.parse(saved);
+        noteIds.forEach(id => gameState.collectedNotes.add(id));
+      }
+    }
+
+    function saveProgress() {
+      localStorage.setItem('gardenNotes', JSON.stringify([...gameState.collectedNotes]));
+    }
+
+    function setupEventListeners() {
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        // Prevent Enter from triggering focused buttons (causes multiple game loops)
+        if (e.code === 'Enter') {
+          e.preventDefault();
+        }
+
+        // Don't register movement keys while reading a note
+        if (gameState.showingNote) {
+          // Only Enter or Escape closes the note
+          if (e.code === 'Enter' || e.code === 'Escape') {
+            closeNote();
+          }
+          return; // Ignore all other keys while note is open
+        }
+
+        gameState.keys[e.key.toLowerCase()] = true;
+        gameState.keys[e.code] = true;
+      });
+
+      document.addEventListener('keyup', (e) => {
+        gameState.keys[e.key.toLowerCase()] = false;
+        gameState.keys[e.code] = false;
+      });
+
+      // Continue button (from opening letter to title)
+      continueBtn.addEventListener('click', () => {
+        openingLetter.classList.add('hidden');
+      });
+
+      // Dream intro continue button - start music here (first user click bypasses autoplay block)
+      dreamContinueBtn.addEventListener('click', () => {
+        dreamIntro.classList.add('hidden');
+        if (!musicPlayer.isPlaying) {
+          initMusic();
+          musicPlayer.audio.play().catch(() => {});
+          musicPlayer.isPlaying = true;
+        }
+      });
+
+      // Secret reveal continue button
+      continueToEndBtn.addEventListener('click', () => {
+        secretReveal.classList.remove('visible');
+        showEndScreen();
+      });
+
+      // Replay button
+      replayBtn.addEventListener('click', replayGame);
+
+      // Start button
+      startBtn.addEventListener('click', startGame);
+
+      // Start dream intro animation when page loads
+      startDreamIntro();
+
+      // Note popup click to close
+      notePopup.addEventListener('click', () => {
+        if (gameState.showingNote) closeNote();
+      });
+
+      // Music controls
+      playPauseBtn.addEventListener('click', toggleMusic);
+      volumeSlider.addEventListener('input', (e) => {
+        musicPlayer.volume = e.target.value / 100;
+        musicPlayer.audio.volume = musicPlayer.volume;
+      });
+      nextBtn.addEventListener('click', nextTrack);
+
+      musicPlayer.audio.addEventListener('ended', nextTrack);
+    }
+
+    // ===== MUSIC FUNCTIONS =====
+    function initMusic() {
+      musicPlayer.audio.volume = musicPlayer.volume;
+      loadTrack(0);
+    }
+
+    function loadTrack(index) {
+      musicPlayer.currentTrack = index;
+      const track = PLAYLIST[index];
+      musicPlayer.audio.src = track.file;
+      songTitleEl.textContent = track.title;
+    }
+
+    function toggleMusic() {
+      if (musicPlayer.isPlaying) {
+        musicPlayer.audio.pause();
+        musicPlayer.isPlaying = false;
+        playPauseBtn.innerHTML = '&#9654;';
+      } else {
+        musicPlayer.audio.play().catch(() => {});
+        musicPlayer.isPlaying = true;
+        playPauseBtn.innerHTML = '&#10074;&#10074;';
+      }
+    }
+
+    function nextTrack() {
+      let nextIndex = (musicPlayer.currentTrack + 1) % PLAYLIST.length;
+      // Skip finale track unless game is complete
+      if (PLAYLIST[nextIndex].area === 'finale' && !gameState.gameComplete) {
+        nextIndex = 0;
+      }
+      loadTrack(nextIndex);
+      if (musicPlayer.isPlaying) {
+        musicPlayer.audio.play().catch(() => {});
+      }
+    }
+
+    function playAreaMusic(areaName) {
+      const areaTrack = PLAYLIST.find(t => t.area === areaName);
+      if (areaTrack) {
+        const index = PLAYLIST.indexOf(areaTrack);
+        if (index !== musicPlayer.currentTrack) {
+          loadTrack(index);
+          if (musicPlayer.isPlaying) {
+            musicPlayer.audio.play().catch(() => {});
+          }
+        }
+      }
+    }
+
+    // ===== GAME START =====
+    function startGame() {
+      // Prevent starting multiple times
+      if (gameState.gameStarted) return;
+
+      gameState.gameStarted = true;
+      titleScreen.classList.add('hidden');
+      hud.classList.add('visible');
+      musicPlayerEl.classList.add('visible');
+
+      // Music already started in dream intro, just update the play button icon
+      if (musicPlayer.isPlaying) {
+        playPauseBtn.innerHTML = '&#10074;&#10074;';
+      }
+
+      showAreaName(AREAS[gameState.currentArea].name);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function replayGame() {
+      // Clear saved progress
+      localStorage.removeItem('gardenNotes');
+
+      // Reset game state
+      gameState.currentArea = 'garden';
+      gameState.player = { x: 450, y: 500 };
+      gameState.collectedNotes = new Set();
+      gameState.showingNote = false;
+      gameState.currentNote = null;
+      gameState.gameStarted = true;
+      gameState.gameComplete = false;
+      gameState.transitioning = false;
+
+      // Hide end screen and secret reveal
+      endScreen.classList.remove('visible');
+      secretReveal.classList.remove('visible');
+
+      // Update UI
+      updateNoteCounter();
+      showAreaName(AREAS[gameState.currentArea].name);
+
+      // Play garden music
+      playAreaMusic('garden');
+
+      // Restart game loop
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ===== GAME LOOP =====
+    function gameLoop(timestamp) {
+      if (!gameState.gameStarted || gameState.gameComplete) return;
+
+      gameState.time = timestamp;
+
+      update();
+      render();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ===== UPDATE =====
+    function update() {
+      if (gameState.showingNote || gameState.transitioning) return;
+
+      // Player movement
+      let dx = 0, dy = 0;
+
+      if (gameState.keys['w'] || gameState.keys['arrowup']) dy -= CONFIG.playerSpeed;
+      if (gameState.keys['s'] || gameState.keys['arrowdown']) dy += CONFIG.playerSpeed;
+      if (gameState.keys['a'] || gameState.keys['arrowleft']) dx -= CONFIG.playerSpeed;
+      if (gameState.keys['d'] || gameState.keys['arrowright']) dx += CONFIG.playerSpeed;
+
+      // Normalize diagonal movement
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.707;
+        dy *= 0.707;
+      }
+
+      // Apply movement with collision detection
+      const newX = gameState.player.x + dx;
+      const newY = gameState.player.y + dy;
+
+      if (canMoveTo(newX, gameState.player.y)) {
+        gameState.player.x = newX;
+      }
+      if (canMoveTo(gameState.player.x, newY)) {
+        gameState.player.y = newY;
+      }
+
+      // Keep player in bounds
+      gameState.player.x = Math.max(CONFIG.playerSize, Math.min(CONFIG.canvasWidth - CONFIG.playerSize, gameState.player.x));
+      gameState.player.y = Math.max(CONFIG.playerSize, Math.min(CONFIG.canvasHeight - CONFIG.playerSize, gameState.player.y));
+
+      // Check for exits
+      checkExits();
+
+      // Check for note collection
+      checkNoteCollection();
+    }
+
+    function canMoveTo(x, y) {
+      const area = AREAS[gameState.currentArea];
+      const playerRadius = CONFIG.playerSize / 2;
+
+      for (const obstacle of area.obstacles) {
+        // Simple rectangle collision
+        if (x + playerRadius > obstacle.x &&
+            x - playerRadius < obstacle.x + obstacle.width &&
+            y + playerRadius > obstacle.y &&
+            y - playerRadius < obstacle.y + obstacle.height) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function checkExits() {
+      const area = AREAS[gameState.currentArea];
+
+      for (const exit of area.exits) {
+        if (gameState.player.x > exit.x &&
+            gameState.player.x < exit.x + exit.width &&
+            gameState.player.y > exit.y &&
+            gameState.player.y < exit.y + exit.height) {
+
+          // Check if requires notes
+          if (exit.requiresNotes && gameState.collectedNotes.size < exit.requiresNotes) {
+            // Show hint - not enough notes
+            return;
+          }
+
+          transitionToArea(exit.to, exit.spawnX, exit.spawnY);
+          break;
+        }
+      }
+    }
+
+    function transitionToArea(newArea, spawnX, spawnY) {
+      gameState.transitioning = true;
+
+      areaTitle.textContent = AREAS[newArea].name;
+      areaTransition.classList.add('active');
+
+      setTimeout(() => {
+        gameState.currentArea = newArea;
+        gameState.player.x = spawnX;
+        gameState.player.y = spawnY;
+
+        playAreaMusic(newArea);
+
+        setTimeout(() => {
+          areaTransition.classList.remove('active');
+          gameState.transitioning = false;
+          showAreaName(AREAS[newArea].name);
+        }, 800);
+      }, 600);
+    }
+
+    function showAreaName(name) {
+      areaName.textContent = name;
+      areaName.classList.add('visible');
+      setTimeout(() => {
+        areaName.classList.remove('visible');
+      }, 3000);
+    }
+
+    function checkNoteCollection() {
+      const currentAreaNotes = NOTES.filter(n => n.area === gameState.currentArea);
+
+      for (const note of currentAreaNotes) {
+        if (gameState.collectedNotes.has(note.id)) continue;
+
+        const dist = Math.sqrt(
+          Math.pow(gameState.player.x - note.x, 2) +
+          Math.pow(gameState.player.y - note.y, 2)
+        );
+
+        if (dist < CONFIG.noteCollectRadius) {
+          collectNote(note);
+          break;
+        }
+      }
+    }
+
+    function collectNote(note) {
+      gameState.collectedNotes.add(note.id);
+      gameState.showingNote = true;
+      gameState.currentNote = note;
+
+      // Show theme badge and fragment letter
+      noteThemeBadge.textContent = note.theme || '';
+      notePopupTitle.textContent = note.title;
+      notePopupText.textContent = note.text;
+      noteFragmentEl.textContent = note.fragment ? `[ ${note.fragment} ]` : '';
+      notePopup.classList.add('visible');
+
+      updateNoteCounter();
+      saveProgress();
+
+      // Create heart particles
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => createHeartParticle(), i * 200);
+      }
+
+    }
+
+    function closeNote() {
+      const wasLastNote = gameState.collectedNotes.size >= CONFIG.totalNotes;
+
+      gameState.showingNote = false;
+      gameState.currentNote = null;
+      notePopup.classList.remove('visible');
+
+      // Show secret reveal AFTER user dismisses the final note
+      if (wasLastNote) {
+        setTimeout(() => {
+          showSecretReveal();
+        }, 500);
+      }
+    }
+
+    function updateNoteCounter() {
+      noteCounter.textContent = `Notes: ${gameState.collectedNotes.size} / ${CONFIG.totalNotes}`;
+    }
+
+    function createHeartParticle() {
+      const heart = document.createElement('div');
+      heart.className = 'heart-particle';
+      heart.textContent = '♡';
+      heart.style.left = (Math.random() * 60 + 20) + '%';
+      heart.style.top = (Math.random() * 40 + 30) + '%';
+      document.body.appendChild(heart);
+
+      setTimeout(() => heart.remove(), 4000);
+    }
+
+    // ===== DREAM INTRO ANIMATION =====
+    function startDreamIntro() {
+      // Fade in each paragraph sequentially
+      const paragraphs = [
+        document.getElementById('dream-p1'),
+        document.getElementById('dream-p2'),
+        document.getElementById('dream-p3'),
+        document.getElementById('dream-p4'),
+        document.getElementById('dream-p5'),
+        document.getElementById('dream-p6')
+      ];
+
+      // Add visible class to each paragraph with delay
+      paragraphs.forEach((p, index) => {
+        setTimeout(() => {
+          p.classList.add('visible');
+        }, index * 2000); // 2 second delay between each
+      });
+
+      // Show the continue button after all text appears
+      setTimeout(() => {
+        dreamContinueBtn.classList.add('visible');
+      }, paragraphs.length * 2000 + 1000);
+    }
+
+    // ===== SECRET REVEAL SCREEN =====
+    function showSecretReveal() {
+      // Close any open note popup first
+      closeNote();
+
+      // Show the secret reveal screen
+      secretReveal.classList.add('visible');
+
+      // Create heart particles during reveal
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => createHeartParticle(), i * 200);
+      }
+    }
+
+    function showEndScreen() {
+      gameState.gameComplete = true;
+
+      // Play finale music - Join Me In Death by HIM
+      const finaleIndex = PLAYLIST.findIndex(t => t.area === 'finale');
+      if (finaleIndex >= 0) {
+        loadTrack(finaleIndex);
+        musicPlayer.audio.play().catch(() => {});
+        musicPlayer.isPlaying = true;
+        playPauseBtn.innerHTML = '&#10074;&#10074;';
+      }
+
+      endScreen.classList.add('visible');
+
+      // Create many heart particles
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => createHeartParticle(), i * 300);
+      }
+    }
+
+    // ===== RENDER =====
+    function render() {
+      const area = AREAS[gameState.currentArea];
+
+      // Clear canvas
+      ctx.fillStyle = area.background;
+      ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+      // Draw area-specific backgrounds
+      if (area.hasHeartConstellation) {
+        drawHeartConstellation();
+      }
+
+      // Draw sanctuary glow effect
+      if (area.hasSanctuaryGlow) {
+        drawSanctuaryGlow();
+      }
+
+      // Draw decorations (paths, stones first - ground level)
+      for (const dec of area.decorations) {
+        if (dec.type === 'path' || dec.type === 'stones' || dec.type === 'petals') {
+          if (dec.type === 'path') {
+            drawPath(dec);
+          } else {
+            drawDecoration(dec);
+          }
+        }
+      }
+
+      // Draw obstacles
+      for (const obstacle of area.obstacles) {
+        drawObstacle(obstacle);
+      }
+
+      // Draw flower decorations
+      for (const dec of area.decorations) {
+        if (dec.type === 'bloodflower' || dec.type === 'blackrose' || dec.type === 'lily') {
+          drawFlower(dec);
+        } else if (dec.type === 'vine') {
+          drawVine(dec);
+        } else if (['lantern', 'mushroom', 'grass', 'hanging', 'glasspanel', 'candle', 'orb', 'wisp'].includes(dec.type)) {
+          drawDecoration(dec);
+        }
+      }
+
+      // Draw exits
+      for (const exit of area.exits) {
+        drawExit(exit);
+      }
+
+      // Draw uncollected notes
+      const currentAreaNotes = NOTES.filter(n => n.area === gameState.currentArea);
+      for (const note of currentAreaNotes) {
+        if (!gameState.collectedNotes.has(note.id)) {
+          drawNote(note);
+        }
+      }
+
+      // Draw fireflies
+      if (area.hasFireflies) {
+        drawFireflies(area.fireflyCount || 8);
+      }
+
+      // Draw floating petals in sanctuary
+      if (area.hasFloatingPetals) {
+        drawFloatingPetals();
+      }
+
+      // Draw garden particles (subtle dust motes)
+      if (area.hasGardenParticles) {
+        drawGardenParticles();
+      }
+
+      // Draw mist
+      if (area.hasMist) {
+        drawMist();
+      }
+
+      // Draw condensation effect
+      if (area.hasCondensation) {
+        drawCondensation();
+      }
+
+      // Draw ghostly mist for cemetery
+      if (area.hasGhostlyMist) {
+        drawGhostlyMist();
+      }
+
+      // Draw player
+      drawPlayer();
+    }
+
+    function drawPath(dec) {
+      ctx.fillStyle = 'rgba(60, 50, 55, 0.3)';
+      ctx.fillRect(dec.x - dec.width/2, dec.y - dec.height/2, dec.width, dec.height);
+    }
+
+    function drawObstacle(obstacle) {
+      ctx.save();
+
+      switch (obstacle.type) {
+        case 'fountain':
+          // Fountain base
+          ctx.fillStyle = '#2a2025';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2,
+                     obstacle.width/2, obstacle.height/3, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Water
+          ctx.fillStyle = 'rgba(80, 100, 120, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2,
+                     obstacle.width/2 - 10, obstacle.height/3 - 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Center pillar
+          ctx.fillStyle = '#3a3035';
+          ctx.fillRect(obstacle.x + obstacle.width/2 - 10, obstacle.y + 20, 20, obstacle.height - 40);
+          break;
+
+        case 'flowerbed':
+          ctx.fillStyle = 'rgba(30, 20, 25, 0.8)';
+          ctx.strokeStyle = 'rgba(80, 60, 70, 0.5)';
+          ctx.lineWidth = 2;
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          break;
+
+        case 'tree':
+          // Trunk
+          ctx.fillStyle = '#1a1518';
+          ctx.fillRect(obstacle.x + obstacle.width/2 - 8, obstacle.y + 20, 16, obstacle.height - 20);
+
+          // Foliage
+          ctx.fillStyle = '#0a1a0a';
+          ctx.beginPath();
+          ctx.arc(obstacle.x + obstacle.width/2, obstacle.y + 15, 25, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'pond':
+          ctx.fillStyle = 'rgba(40, 50, 70, 0.6)';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2,
+                     obstacle.width/2, obstacle.height/2, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Lilypads
+          ctx.fillStyle = 'rgba(30, 60, 30, 0.7)';
+          for (let i = 0; i < 4; i++) {
+            const lx = obstacle.x + 40 + Math.sin(i * 1.5) * 50;
+            const ly = obstacle.y + 30 + Math.cos(i * 1.5) * 30;
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, 15, 12, i * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+
+        case 'log':
+          ctx.fillStyle = '#1f1510';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2,
+                     obstacle.width/2, obstacle.height/2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'table':
+          ctx.fillStyle = '#2a1a20';
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          ctx.strokeStyle = 'rgba(100, 70, 80, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          break;
+
+        case 'display':
+          ctx.fillStyle = '#1a1520';
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          ctx.strokeStyle = 'rgba(120, 80, 100, 0.5)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+          break;
+
+        case 'sacred_tree':
+          // Glowing trunk
+          ctx.fillStyle = '#1a1015';
+          ctx.fillRect(obstacle.x + obstacle.width/2 - 20, obstacle.y + 40, 40, obstacle.height - 40);
+
+          // Glowing foliage
+          const gradient = ctx.createRadialGradient(
+            obstacle.x + obstacle.width/2, obstacle.y + 30, 0,
+            obstacle.x + obstacle.width/2, obstacle.y + 30, 60
+          );
+          gradient.addColorStop(0, 'rgba(100, 60, 80, 0.8)');
+          gradient.addColorStop(0.5, 'rgba(50, 30, 50, 0.6)');
+          gradient.addColorStop(1, 'rgba(20, 10, 20, 0.3)');
+
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(obstacle.x + obstacle.width/2, obstacle.y + 30, 60, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Glowing flowers on tree
+          const glowTime = gameState.time / 1000;
+          for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const dist = 30 + Math.sin(glowTime + i) * 5;
+            const fx = obstacle.x + obstacle.width/2 + Math.cos(angle) * dist;
+            const fy = obstacle.y + 30 + Math.sin(angle) * dist * 0.6;
+
+            ctx.fillStyle = `rgba(180, 140, 160, ${0.5 + Math.sin(glowTime * 2 + i) * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+
+        case 'bench':
+          // Bench seat
+          ctx.fillStyle = '#2a1a1f';
+          ctx.fillRect(obstacle.x, obstacle.y + 8, obstacle.width, 12);
+          // Bench legs
+          ctx.fillStyle = '#1a1015';
+          ctx.fillRect(obstacle.x + 5, obstacle.y + 15, 8, 10);
+          ctx.fillRect(obstacle.x + obstacle.width - 13, obstacle.y + 15, 8, 10);
+          // Bench back
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, 6);
+          break;
+
+        case 'rock':
+          // Mossy rock
+          ctx.fillStyle = '#1f1a18';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2,
+                     obstacle.width/2, obstacle.height/2, 0.1, 0, Math.PI * 2);
+          ctx.fill();
+          // Moss patches
+          ctx.fillStyle = 'rgba(40, 60, 35, 0.6)';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/3, obstacle.y + obstacle.height/3,
+                     8, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'pot':
+          // Terracotta pot
+          ctx.fillStyle = '#3a2520';
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x + 5, obstacle.y);
+          ctx.lineTo(obstacle.x + obstacle.width - 5, obstacle.y);
+          ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+          ctx.lineTo(obstacle.x, obstacle.y + obstacle.height);
+          ctx.closePath();
+          ctx.fill();
+          // Rim
+          ctx.fillStyle = '#4a3530';
+          ctx.fillRect(obstacle.x + 2, obstacle.y, obstacle.width - 4, 6);
+          // Plant
+          ctx.fillStyle = '#1a3a1a';
+          ctx.beginPath();
+          ctx.arc(obstacle.x + obstacle.width/2, obstacle.y - 5, 15, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'gravestone':
+          // Gravestone base
+          ctx.fillStyle = '#2a2530';
+          ctx.fillRect(obstacle.x + 5, obstacle.y + obstacle.height - 15, obstacle.width - 10, 15);
+          // Main stone
+          ctx.fillStyle = '#3a3540';
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x + 5, obstacle.y + obstacle.height - 15);
+          ctx.lineTo(obstacle.x + 5, obstacle.y + 15);
+          ctx.quadraticCurveTo(obstacle.x + obstacle.width/2, obstacle.y - 5, obstacle.x + obstacle.width - 5, obstacle.y + 15);
+          ctx.lineTo(obstacle.x + obstacle.width - 5, obstacle.y + obstacle.height - 15);
+          ctx.closePath();
+          ctx.fill();
+          // Weathered texture
+          ctx.fillStyle = 'rgba(60, 55, 65, 0.5)';
+          ctx.fillRect(obstacle.x + 10, obstacle.y + 20, obstacle.width - 20, 3);
+          ctx.fillRect(obstacle.x + 12, obstacle.y + 30, obstacle.width - 24, 2);
+          // Moss
+          ctx.fillStyle = 'rgba(40, 60, 35, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + 15, obstacle.y + obstacle.height - 20, 8, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'mausoleum':
+          // Base platform
+          ctx.fillStyle = '#2a2530';
+          ctx.fillRect(obstacle.x, obstacle.y + obstacle.height - 20, obstacle.width, 20);
+          // Main structure
+          ctx.fillStyle = '#3a3540';
+          ctx.fillRect(obstacle.x + 10, obstacle.y + 30, obstacle.width - 20, obstacle.height - 50);
+          // Roof (triangular)
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x + 5, obstacle.y + 30);
+          ctx.lineTo(obstacle.x + obstacle.width/2, obstacle.y);
+          ctx.lineTo(obstacle.x + obstacle.width - 5, obstacle.y + 30);
+          ctx.closePath();
+          ctx.fill();
+          // Pillars
+          ctx.fillStyle = '#4a4550';
+          ctx.fillRect(obstacle.x + 15, obstacle.y + 35, 12, obstacle.height - 60);
+          ctx.fillRect(obstacle.x + obstacle.width - 27, obstacle.y + 35, 12, obstacle.height - 60);
+          // Door
+          ctx.fillStyle = '#1a1520';
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x + 45, obstacle.y + obstacle.height - 20);
+          ctx.lineTo(obstacle.x + 45, obstacle.y + 50);
+          ctx.quadraticCurveTo(obstacle.x + obstacle.width/2, obstacle.y + 40, obstacle.x + obstacle.width - 45, obstacle.y + 50);
+          ctx.lineTo(obstacle.x + obstacle.width - 45, obstacle.y + obstacle.height - 20);
+          ctx.closePath();
+          ctx.fill();
+          // Glowing symbol
+          const mausGlow = 0.3 + Math.sin(gameState.time / 1000) * 0.2;
+          ctx.fillStyle = `rgba(180, 140, 160, ${mausGlow})`;
+          ctx.beginPath();
+          ctx.arc(obstacle.x + obstacle.width/2, obstacle.y + 60, 8, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'willow':
+          // Trunk
+          ctx.fillStyle = '#1a1518';
+          ctx.fillRect(obstacle.x + obstacle.width/2 - 10, obstacle.y + 25, 20, obstacle.height - 25);
+          // Drooping branches
+          ctx.strokeStyle = '#2a3a2a';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 8; i++) {
+            const startX = obstacle.x + obstacle.width/2 + (i - 4) * 8;
+            const sway = Math.sin(gameState.time / 1500 + i) * 5;
+            ctx.beginPath();
+            ctx.moveTo(startX, obstacle.y + 20);
+            ctx.quadraticCurveTo(startX + sway, obstacle.y + 50, startX + sway * 2, obstacle.y + 80);
+            ctx.stroke();
+          }
+          // Foliage base
+          ctx.fillStyle = 'rgba(30, 50, 30, 0.7)';
+          ctx.beginPath();
+          ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + 15, 30, 20, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'fence':
+          // Iron fence
+          ctx.fillStyle = '#2a2530';
+          // Horizontal bars
+          ctx.fillRect(obstacle.x, obstacle.y + 5, obstacle.width, 3);
+          ctx.fillRect(obstacle.x, obstacle.y + 15, obstacle.width, 3);
+          // Vertical bars with spikes
+          for (let i = 0; i < 5; i++) {
+            const bx = obstacle.x + 8 + i * (obstacle.width - 16) / 4;
+            ctx.fillRect(bx - 2, obstacle.y + 3, 4, 17);
+            // Spike
+            ctx.beginPath();
+            ctx.moveTo(bx - 3, obstacle.y + 3);
+            ctx.lineTo(bx, obstacle.y - 5);
+            ctx.lineTo(bx + 3, obstacle.y + 3);
+            ctx.closePath();
+            ctx.fill();
+          }
+          break;
+      }
+
+      ctx.restore();
+    }
+
+    function drawFlower(dec) {
+      ctx.save();
+      ctx.translate(dec.x, dec.y);
+      ctx.scale(dec.scale, dec.scale);
+
+      // Add sway animation
+      const sway = Math.sin(gameState.time / 1000 + dec.x) * 0.05;
+      ctx.rotate(sway);
+
+      switch (dec.type) {
+        case 'bloodflower':
+          // Stem
+          ctx.strokeStyle = '#2d5a2d';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(0, 90);
+          ctx.quadraticCurveTo(-2, 50, 0, 10);
+          ctx.stroke();
+
+          // Petals
+          ctx.strokeStyle = '#660000';
+          ctx.lineWidth = 1.5;
+          const angles = [0, 60, 120, 180, 240, 300];
+          for (const angle of angles) {
+            const rad = angle * Math.PI / 180;
+            const endX = Math.cos(rad) * 35;
+            const endY = Math.sin(rad) * 35;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#4a0000';
+            ctx.beginPath();
+            ctx.arc(endX * 1.05, endY * 1.05, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+
+        case 'blackrose':
+          // Stem
+          ctx.strokeStyle = '#1a3a1a';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(0, 110);
+          ctx.quadraticCurveTo(-5, 70, 0, 30);
+          ctx.stroke();
+
+          // Petals
+          ctx.fillStyle = '#1a0a10';
+          ctx.beginPath();
+          ctx.ellipse(-15, 10, 18, 25, -0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(15, 10, 18, 25, 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(0, -10, 15, 20, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Inner petals
+          ctx.fillStyle = '#2a1520';
+          ctx.beginPath();
+          ctx.ellipse(-8, 5, 12, 18, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(8, 5, 12, 18, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Center
+          ctx.fillStyle = '#4a2a40';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 6, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'lily':
+          // Stem
+          ctx.strokeStyle = '#3a5a3a';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(0, 100);
+          ctx.quadraticCurveTo(-2, 50, 5, -10);
+          ctx.stroke();
+
+          // Leaves
+          ctx.fillStyle = '#2a4a2a';
+          ctx.beginPath();
+          ctx.moveTo(0, 80);
+          ctx.quadraticCurveTo(-30, 50, -35, 0);
+          ctx.quadraticCurveTo(-32, -10, -25, -15);
+          ctx.quadraticCurveTo(-15, 20, 0, 75);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(0, 80);
+          ctx.quadraticCurveTo(30, 50, 35, 0);
+          ctx.quadraticCurveTo(32, -10, 25, -15);
+          ctx.quadraticCurveTo(15, 20, 0, 75);
+          ctx.fill();
+
+          // Bell flowers
+          for (let i = 0; i < 4; i++) {
+            const by = -5 + i * 12;
+            const bx = 5 + Math.sin(i) * 3;
+
+            ctx.fillStyle = '#f5f0f0';
+            ctx.beginPath();
+            ctx.ellipse(bx + 12, by, 6 - i * 0.5, 8 - i * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+      }
+
+      ctx.restore();
+    }
+
+    function drawVine(dec) {
+      ctx.save();
+      ctx.strokeStyle = '#1a3a1a';
+      ctx.lineWidth = 3;
+
+      for (let i = 0; i < 5; i++) {
+        const x = dec.x + i * 10;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.quadraticCurveTo(x + 20, 100 + i * 20, x - 10, 200 + i * 30);
+        ctx.stroke();
+
+        // Leaves
+        ctx.fillStyle = '#2a4a2a';
+        for (let j = 1; j < 4; j++) {
+          const ly = j * 50 + i * 15;
+          ctx.beginPath();
+          ctx.ellipse(x + 5, ly, 8, 12, 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function drawDecoration(dec) {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      switch (dec.type) {
+        case 'lantern':
+          // Lantern post
+          ctx.fillStyle = '#1a1015';
+          ctx.fillRect(dec.x - 2, dec.y, 4, 25);
+          // Lantern body
+          ctx.fillStyle = '#2a1a20';
+          ctx.fillRect(dec.x - 8, dec.y - 15, 16, 18);
+          // Lantern glow
+          const lanternGlow = 0.4 + Math.sin(time * 2 + dec.x) * 0.2;
+          const lanternGrad = ctx.createRadialGradient(dec.x, dec.y - 6, 0, dec.x, dec.y - 6, 20);
+          lanternGrad.addColorStop(0, `rgba(255, 200, 150, ${lanternGlow})`);
+          lanternGrad.addColorStop(1, 'rgba(255, 150, 100, 0)');
+          ctx.fillStyle = lanternGrad;
+          ctx.beginPath();
+          ctx.arc(dec.x, dec.y - 6, 20, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'stones':
+          // Stepping stones
+          ctx.fillStyle = '#2a2025';
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse(dec.x + (i - 1) * 18, dec.y + Math.sin(i) * 5, 12, 8, i * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+
+        case 'mushroom':
+          // Mushroom stem
+          ctx.fillStyle = '#d4c8c0';
+          ctx.fillRect(dec.x - 3, dec.y + 5, 6, 10);
+          // Mushroom cap
+          ctx.fillStyle = '#4a2030';
+          ctx.beginPath();
+          ctx.ellipse(dec.x, dec.y + 5, 10, 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Spots
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.beginPath();
+          ctx.arc(dec.x - 3, dec.y + 3, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(dec.x + 4, dec.y + 5, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'grass':
+          // Tall grass blades
+          ctx.strokeStyle = '#2a4a2a';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 5; i++) {
+            const sway = Math.sin(time + dec.x + i) * 5;
+            ctx.beginPath();
+            ctx.moveTo(dec.x + i * 6 - 12, dec.y + 20);
+            ctx.quadraticCurveTo(dec.x + i * 6 - 12 + sway, dec.y, dec.x + i * 6 - 10 + sway * 1.5, dec.y - 15);
+            ctx.stroke();
+          }
+          break;
+
+        case 'hanging':
+          // Hanging plant pot
+          ctx.strokeStyle = '#3a2520';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(dec.x, 0);
+          ctx.lineTo(dec.x, dec.y);
+          ctx.stroke();
+          // Pot
+          ctx.fillStyle = '#3a2520';
+          ctx.beginPath();
+          ctx.moveTo(dec.x - 10, dec.y);
+          ctx.lineTo(dec.x + 10, dec.y);
+          ctx.lineTo(dec.x + 8, dec.y + 15);
+          ctx.lineTo(dec.x - 8, dec.y + 15);
+          ctx.closePath();
+          ctx.fill();
+          // Trailing vines
+          ctx.strokeStyle = '#2a4a2a';
+          for (let i = 0; i < 3; i++) {
+            const vx = dec.x - 5 + i * 5;
+            ctx.beginPath();
+            ctx.moveTo(vx, dec.y + 15);
+            ctx.quadraticCurveTo(vx + Math.sin(time + i) * 10, dec.y + 40, vx + Math.sin(time * 0.5 + i) * 15, dec.y + 60);
+            ctx.stroke();
+          }
+          break;
+
+        case 'petals':
+          // Scattered rose petals
+          ctx.fillStyle = 'rgba(80, 20, 40, 0.6)';
+          for (let i = 0; i < 5; i++) {
+            const px = dec.x + Math.sin(i * 2.5) * 20;
+            const py = dec.y + Math.cos(i * 2.5) * 15;
+            ctx.beginPath();
+            ctx.ellipse(px, py, 5, 3, i * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+
+        case 'glasspanel':
+          // Subtle glass panel effect on edges
+          const panelGrad = ctx.createLinearGradient(dec.x, 0, dec.x + 50, 0);
+          panelGrad.addColorStop(0, 'rgba(100, 120, 140, 0.1)');
+          panelGrad.addColorStop(1, 'rgba(100, 120, 140, 0)');
+          ctx.fillStyle = panelGrad;
+          ctx.fillRect(dec.x, 0, 50, CONFIG.canvasHeight);
+          break;
+
+        case 'candle':
+          // Candle holder
+          ctx.fillStyle = '#2a1a20';
+          ctx.fillRect(dec.x - 4, dec.y + 10, 8, 5);
+          // Candle
+          ctx.fillStyle = '#d4c8c8';
+          ctx.fillRect(dec.x - 3, dec.y - 5, 6, 15);
+          // Flame
+          const flicker = 0.7 + Math.sin(time * 8 + dec.x) * 0.3;
+          const flameGrad = ctx.createRadialGradient(dec.x, dec.y - 10, 0, dec.x, dec.y - 10, 15);
+          flameGrad.addColorStop(0, `rgba(255, 200, 100, ${flicker})`);
+          flameGrad.addColorStop(0.5, `rgba(255, 150, 50, ${flicker * 0.5})`);
+          flameGrad.addColorStop(1, 'rgba(255, 100, 50, 0)');
+          ctx.fillStyle = flameGrad;
+          ctx.beginPath();
+          ctx.ellipse(dec.x, dec.y - 10, 8, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Flame core
+          ctx.fillStyle = `rgba(255, 255, 200, ${flicker})`;
+          ctx.beginPath();
+          ctx.ellipse(dec.x, dec.y - 8, 2, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'orb':
+          // Glowing magical orb
+          const orbPulse = 0.3 + Math.sin(time * 1.5 + dec.x + dec.y) * 0.2;
+          const orbGrad = ctx.createRadialGradient(dec.x, dec.y, 0, dec.x, dec.y, 25);
+          orbGrad.addColorStop(0, `rgba(180, 140, 180, ${orbPulse})`);
+          orbGrad.addColorStop(0.5, `rgba(120, 80, 120, ${orbPulse * 0.5})`);
+          orbGrad.addColorStop(1, 'rgba(80, 40, 80, 0)');
+          ctx.fillStyle = orbGrad;
+          ctx.beginPath();
+          ctx.arc(dec.x, dec.y, 25, 0, Math.PI * 2);
+          ctx.fill();
+          // Inner core
+          ctx.fillStyle = `rgba(220, 200, 220, ${orbPulse + 0.2})`;
+          ctx.beginPath();
+          ctx.arc(dec.x, dec.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'floatingpetals':
+          // Floating rose petals animation (drawn in area effect)
+          break;
+
+        case 'wisp':
+          // Ghostly wisp
+          const wispFloat = Math.sin(time * 0.8 + dec.x) * 20;
+          const wispAlpha = 0.2 + Math.sin(time * 1.5 + dec.y) * 0.15;
+          const wispGrad = ctx.createRadialGradient(dec.x + wispFloat, dec.y + Math.cos(time) * 10, 0, dec.x + wispFloat, dec.y + Math.cos(time) * 10, 30);
+          wispGrad.addColorStop(0, `rgba(200, 220, 255, ${wispAlpha})`);
+          wispGrad.addColorStop(0.5, `rgba(150, 180, 220, ${wispAlpha * 0.5})`);
+          wispGrad.addColorStop(1, 'rgba(100, 140, 180, 0)');
+          ctx.fillStyle = wispGrad;
+          ctx.beginPath();
+          ctx.ellipse(dec.x + wispFloat, dec.y + Math.cos(time) * 10, 25, 35, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Core
+          ctx.fillStyle = `rgba(255, 255, 255, ${wispAlpha + 0.1})`;
+          ctx.beginPath();
+          ctx.arc(dec.x + wispFloat, dec.y + Math.cos(time) * 10 - 5, 5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+      }
+
+      ctx.restore();
+    }
+
+    function drawExit(exit) {
+      ctx.save();
+
+      // Check if locked
+      if (exit.requiresNotes && gameState.collectedNotes.size < exit.requiresNotes) {
+        ctx.fillStyle = 'rgba(60, 40, 50, 0.5)';
+        ctx.fillRect(exit.x, exit.y, exit.width, exit.height);
+
+        // Lock indicator
+        ctx.fillStyle = 'rgba(139, 90, 100, 0.7)';
+        ctx.font = '16px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔒', exit.x + exit.width/2, exit.y + exit.height/2 + 5);
+        ctx.font = '10px serif';
+        ctx.fillText(`${exit.requiresNotes} notes`, exit.x + exit.width/2, exit.y + exit.height/2 + 20);
+      } else {
+        // Open exit glow
+        const glow = Math.sin(gameState.time / 500) * 0.2 + 0.4;
+        ctx.fillStyle = `rgba(139, 90, 100, ${glow})`;
+        ctx.fillRect(exit.x, exit.y, exit.width, exit.height);
+      }
+
+      ctx.restore();
+    }
+
+    function drawNote(note) {
+      ctx.save();
+
+      const pulse = Math.sin(gameState.time / 300) * 0.3 + 0.7;
+      const bob = Math.sin(gameState.time / 500) * 3;
+
+      // Outer glow
+      const gradient = ctx.createRadialGradient(note.x, note.y + bob, 0, note.x, note.y + bob, 35);
+      gradient.addColorStop(0, `rgba(180, 140, 160, ${pulse * 0.6})`);
+      gradient.addColorStop(0.5, `rgba(139, 90, 100, ${pulse * 0.3})`);
+      gradient.addColorStop(1, 'rgba(139, 90, 100, 0)');
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(note.x, note.y + bob, 35, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Note icon (envelope)
+      ctx.fillStyle = `rgba(212, 184, 190, ${pulse})`;
+      ctx.beginPath();
+      ctx.moveTo(note.x - 12, note.y + bob - 8);
+      ctx.lineTo(note.x + 12, note.y + bob - 8);
+      ctx.lineTo(note.x + 12, note.y + bob + 8);
+      ctx.lineTo(note.x - 12, note.y + bob + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Envelope flap
+      ctx.beginPath();
+      ctx.moveTo(note.x - 12, note.y + bob - 8);
+      ctx.lineTo(note.x, note.y + bob + 2);
+      ctx.lineTo(note.x + 12, note.y + bob - 8);
+      ctx.strokeStyle = 'rgba(139, 90, 100, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawHeartConstellation() {
+      ctx.save();
+
+      const centerX = CONFIG.canvasWidth / 2;
+      const centerY = 100;
+      const size = 60;
+      const twinkle = Math.sin(gameState.time / 1000) * 0.3 + 0.7;
+
+      // Heart shape points
+      const heartPoints = [];
+      for (let t = 0; t < Math.PI * 2; t += 0.3) {
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+        heartPoints.push({
+          x: centerX + x * (size / 16),
+          y: centerY + y * (size / 16)
+        });
+      }
+
+      // Draw stars at heart points
+      ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+      for (const point of heartPoints) {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Connect with faint lines
+      ctx.strokeStyle = `rgba(180, 140, 160, ${twinkle * 0.3})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(heartPoints[0].x, heartPoints[0].y);
+      for (let i = 1; i < heartPoints.length; i++) {
+        ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawFireflies(count = 8) {
+      ctx.save();
+
+      for (let i = 0; i < count; i++) {
+        const time = gameState.time / 1000 + i * 100;
+        const x = 50 + (i * (800 / count)) + Math.sin(time * 0.5 + i) * 60;
+        const y = 150 + Math.sin(time * 0.3 + i) * 150 + Math.cos(time * 0.2 + i * 2) * 50;
+        const alpha = 0.3 + Math.sin(time * 2 + i) * 0.4;
+
+        // Glow
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 15);
+        gradient.addColorStop(0, `rgba(255, 255, 150, ${alpha})`);
+        gradient.addColorStop(1, 'rgba(255, 255, 150, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core
+        ctx.fillStyle = `rgba(255, 255, 200, ${alpha + 0.3})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawMist() {
+      ctx.save();
+
+      const time = gameState.time / 2000;
+
+      for (let i = 0; i < 5; i++) {
+        const x = (i * 200 + time * 50) % (CONFIG.canvasWidth + 200) - 100;
+        const y = 400 + Math.sin(time + i) * 30;
+
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 100);
+        gradient.addColorStop(0, 'rgba(100, 80, 100, 0.1)');
+        gradient.addColorStop(1, 'rgba(100, 80, 100, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 150, 50, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawSanctuaryGlow() {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      // Central ambient glow around the sacred tree area
+      const centerX = CONFIG.canvasWidth / 2;
+      const centerY = 350;
+      const pulse = 0.15 + Math.sin(time * 0.5) * 0.05;
+
+      const glow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 250);
+      glow.addColorStop(0, `rgba(120, 80, 100, ${pulse})`);
+      glow.addColorStop(0.5, `rgba(80, 50, 70, ${pulse * 0.5})`);
+      glow.addColorStop(1, 'rgba(60, 30, 50, 0)');
+
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+      ctx.restore();
+    }
+
+    function drawFloatingPetals() {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      // Floating rose petals drifting across the sanctuary
+      for (let i = 0; i < 12; i++) {
+        const baseX = (i * 80 + time * 20) % (CONFIG.canvasWidth + 100) - 50;
+        const baseY = 100 + Math.sin(time * 0.5 + i * 0.8) * 200 + Math.cos(time * 0.3 + i) * 100;
+        const rotation = time + i * 0.5;
+        const alpha = 0.4 + Math.sin(time + i) * 0.2;
+
+        ctx.save();
+        ctx.translate(baseX, baseY);
+        ctx.rotate(rotation);
+
+        // Petal shape
+        ctx.fillStyle = `rgba(100, 40, 60, ${alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGardenParticles() {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      // Subtle dust motes / pollen floating in the garden
+      for (let i = 0; i < 15; i++) {
+        const x = (i * 65 + Math.sin(time * 0.3 + i) * 30) % CONFIG.canvasWidth;
+        const y = (i * 45 + time * 10 + Math.cos(time * 0.5 + i) * 20) % CONFIG.canvasHeight;
+        const alpha = 0.15 + Math.sin(time * 2 + i) * 0.1;
+        const size = 1 + Math.sin(i) * 0.5;
+
+        ctx.fillStyle = `rgba(200, 180, 160, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCondensation() {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      // Water droplets on edges (greenhouse glass effect)
+      for (let i = 0; i < 20; i++) {
+        const x = i < 10 ? 10 + Math.sin(i * 0.7) * 20 : CONFIG.canvasWidth - 10 - Math.sin(i * 0.7) * 20;
+        const y = (i * 35 + Math.sin(time * 0.2 + i) * 10) % CONFIG.canvasHeight;
+        const size = 2 + Math.sin(i * 1.3) * 1;
+        const alpha = 0.2 + Math.sin(time + i) * 0.1;
+
+        // Droplet
+        ctx.fillStyle = `rgba(150, 170, 190, ${alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(x, y, size, size * 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Subtle fog at top (glass ceiling)
+      const fogGrad = ctx.createLinearGradient(0, 0, 0, 80);
+      fogGrad.addColorStop(0, 'rgba(100, 120, 140, 0.15)');
+      fogGrad.addColorStop(1, 'rgba(100, 120, 140, 0)');
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(0, 0, CONFIG.canvasWidth, 80);
+
+      ctx.restore();
+    }
+
+    function drawGhostlyMist() {
+      ctx.save();
+      const time = gameState.time / 1000;
+
+      // Eerie low-lying mist with blue-grey tones
+      for (let i = 0; i < 8; i++) {
+        const x = (i * 130 + time * 15) % (CONFIG.canvasWidth + 200) - 100;
+        const y = 450 + Math.sin(time * 0.3 + i) * 40;
+        const alpha = 0.08 + Math.sin(time * 0.5 + i * 0.7) * 0.04;
+
+        const mistGrad = ctx.createRadialGradient(x, y, 0, x, y, 120);
+        mistGrad.addColorStop(0, `rgba(150, 160, 180, ${alpha})`);
+        mistGrad.addColorStop(0.5, `rgba(120, 130, 160, ${alpha * 0.6})`);
+        mistGrad.addColorStop(1, 'rgba(100, 110, 140, 0)');
+
+        ctx.fillStyle = mistGrad;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 150, 60, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Ground fog overlay
+      const groundFog = ctx.createLinearGradient(0, CONFIG.canvasHeight - 100, 0, CONFIG.canvasHeight);
+      groundFog.addColorStop(0, 'rgba(80, 90, 110, 0)');
+      groundFog.addColorStop(1, 'rgba(80, 90, 110, 0.15)');
+      ctx.fillStyle = groundFog;
+      ctx.fillRect(0, CONFIG.canvasHeight - 100, CONFIG.canvasWidth, 100);
+
+      ctx.restore();
+    }
+
+    function drawPlayer() {
+      ctx.save();
+
+      const bob = Math.sin(gameState.time / 200) * 2;
+      const x = gameState.player.x;
+      const y = gameState.player.y + bob;
+
+      // Outer glow
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, CONFIG.playerSize * 1.5);
+      gradient.addColorStop(0, 'rgba(180, 140, 160, 0.4)');
+      gradient.addColorStop(0.5, 'rgba(139, 90, 100, 0.2)');
+      gradient.addColorStop(1, 'rgba(139, 90, 100, 0)');
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, CONFIG.playerSize * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner glow / spirit body
+      const innerGradient = ctx.createRadialGradient(x, y - 2, 0, x, y, CONFIG.playerSize);
+      innerGradient.addColorStop(0, 'rgba(232, 208, 216, 0.9)');
+      innerGradient.addColorStop(0.6, 'rgba(212, 184, 190, 0.7)');
+      innerGradient.addColorStop(1, 'rgba(180, 140, 160, 0.3)');
+
+      ctx.fillStyle = innerGradient;
+      ctx.beginPath();
+      ctx.arc(x, y, CONFIG.playerSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core
+      ctx.fillStyle = 'rgba(255, 250, 252, 0.9)';
+      ctx.beginPath();
+      ctx.arc(x, y - 2, CONFIG.playerSize / 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // ===== START =====
+    init();
+  </script>
+</body>
+</html>
